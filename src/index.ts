@@ -1,5 +1,5 @@
 import { eq } from 'drizzle-orm';
-import { index } from './db/index.js';
+import { index, pool } from './db/index.js';
 import { departments } from './db/schema/index.js';
 
 async function main() {
@@ -46,7 +46,11 @@ async function main() {
     console.log('\nCRUD operations completed successfully.');
   } catch (error) {
     console.error('❌ Error performing CRUD operations:', error);
-    process.exit(1);
+  } finally {
+    if (pool) {
+      await pool.end();
+      console.log('Database pool closed.');
+    }
   }
 }
 
