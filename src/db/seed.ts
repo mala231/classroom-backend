@@ -15,15 +15,12 @@ async function seed() {
 
     // 2. Insert Departments
     console.log('Inserting departments...');
-    const [csDept] = await db.insert(departments).values([
+    const [csDept, mathDept] = await db.insert(departments).values([
       {
         code: 'CS',
         name: 'Computer Science',
         description: 'Department of Computer Science and Engineering',
-      }
-    ]).returning();
-
-    const [mathDept] = await db.insert(departments).values([
+      },
       {
         code: 'MATH',
         name: 'Mathematics',
