@@ -1,53 +1,34 @@
-import { eq } from 'drizzle-orm';
-import { index } from './db/index.js';
-import { departments } from './db/schema/index.js';
+import 'dotenv/config';
+import express from 'express';
+import cors from 'cors';
+import subjectsRouter from "./routes/subjects.js";
 
-async function main() {
-  try {
-    console.log('Performing CRUD operations on departments...');
+const app = express();
+const PORT = process.env.PORT ? Number(process.env.PORT) : 8000;
 
-    // CREATE: Insert a new department
-    const [newDept] = await index
-      .insert(departments)
-      .values({
-        code: 'CS',
-        name: 'Computer Science',
-        description: 'Computer Science Department'
-      })
-      .returning();
-
-    if (!newDept) {
-      throw new Error('Failed to create department');
-    }
-
-    console.log('✅ CREATE: New department created:', newDept);
-
-    // READ: Select the department
-    const foundDept = await index.select().from(departments).where(eq(departments.id, newDept.id));
-    console.log('✅ READ: Found department:', foundDept[0]);
-
-    // UPDATE: Change the department's name
-    const [updatedDept] = await index
-      .update(departments)
-      .set({ name: 'Advanced Computer Science' })
-      .where(eq(departments.id, newDept.id))
-      .returning();
-
-    if (!updatedDept) {
-      throw new Error('Failed to update department');
-    }
-
-    console.log('✅ UPDATE: Department updated:', updatedDept);
-
-    // DELETE: Remove the department
-    await index.delete(departments).where(eq(departments.id, newDept.id));
-    console.log('✅ DELETE: Department deleted.');
-
-    console.log('\nCRUD operations completed successfully.');
-  } catch (error) {
-    console.error('❌ Error performing CRUD operations:', error);
-    process.exit(1);
-  }
+if (!process.env.FRONTEND_URL) {
+  throw new Error('Frontend URL is not set in the env file.');
 }
 
-main();
+// Middleware to parse incoming JSON requests
+app.use(express.json());
+
+app.use(cors({
+  origin: process.env.FRONTEND_URL,
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  credentials: true
+
+}))
+
+// API Routes
+app.use('/api/subjects', subjectsRouter);
+
+// Root Health Check Route
+app.get('/', (req, res) => {
+  res.send('Hello, welcome to the Classroom API!');
+});
+
+// Start the Server
+app.listen(PORT, () => {
+  console.log(`Server is running at http://localhost:${PORT}`);
+});
