@@ -24,7 +24,7 @@ router.get('/', async (req, res) => {
 
 
         if (department) {
-            const deptPattern = `%\${String(department).replace(/[%_]/g, '\\$&')}%`;
+            const deptPattern = `%${String(department).replace(/[%_]/g, '\\$&')}%`;
             filterConditions.push(ilike(departments.name, deptPattern));
         }
         const whereClause = filterConditions.length > 0 ? and(...filterConditions) : undefined;
@@ -69,4 +69,49 @@ router.get('/', async (req, res) => {
     }
 
 })
+
+// POST / - Create a new subject
+router.post('/', async (req, res) => {
+    try {
+        const { name, code, description, department } = req.body;
+
+        if (!name || !code || !department) {
+             res.status(400).json({ error: 'Missing required subject fields' });
+             return;
+        }
+
+        // Resolve department by name or code
+        let dept = await db.select().from(departments).where(eq(departments.name, department)).limit(1);
+        if (dept.length === 0) {
+            dept = await db.select().from(departments).where(eq(departments.code, department)).limit(1);
+        }
+
+        const departmentObj = dept[0];
+        if (!departmentObj) {
+             res.status(400).json({ error: `Department '${department}' not found` });
+             return;
+        }
+
+        const insertedSubjects = await db.insert(subjects).values({
+            name,
+            code,
+            description,
+            departmentId: departmentObj.id
+        }).returning();
+
+        const newSubject = insertedSubjects[0];
+        if (!newSubject) {
+             res.status(500).json({ error: 'Failed to create subject' });
+             return;
+        }
+
+        res.status(201).json({
+            data: newSubject
+        });
+    } catch (e) {
+        console.error(`POST /api/subjects error: ${e}`);
+        res.status(500).json({ error: 'Failed to create subject' });
+    }
+});
+
 export default router;
